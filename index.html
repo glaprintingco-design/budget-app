@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Presupuesto Monge Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: #f8fafc; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .active-tab { color: #059669; border-top: 2px solid #059669; background-color: #ecfdf5; }
+        .loader { border-top-color: #3b82f6; animation: spinner 1s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="h-screen flex flex-col justify-between bg-slate-50">
+
+    <header class="bg-white shadow-sm p-4 pt-8 sticky top-0 z-10 flex justify-between items-center">
+        <h1 class="text-xl font-extrabold text-slate-800">💰 Monge Budget</h1>
+        <span class="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full" id="indicador-mes">...</span>
+    </header>
+
+    <main class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24">
+        
+        <div id="tab-registro" class="space-y-5">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <label class="block text-slate-400 text-xs font-bold uppercase mb-3">Usuario</label>
+                <div class="flex space-x-3">
+                    <button onclick="setPersona('Angel')" id="btn-angel" class="flex-1 py-3 rounded-xl border font-bold text-slate-600">👨 Angel</button>
+                    <button onclick="setPersona('Luisa')" id="btn-luisa" class="flex-1 py-3 rounded-xl border font-bold text-slate-600">👩 Luisa</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 space-y-5">
+                <div>
+                    <label class="block text-slate-600 font-bold mb-2 text-sm">Monto</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-4 text-slate-400 text-xl">$</span>
+                        <input type="number" id="monto" class="w-full bg-slate-50 border rounded-xl py-4 pl-9 pr-4 text-3xl font-bold focus:ring-2 focus:ring-green-500 outline-none" placeholder="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-600 font-bold mb-2 text-sm">Categoría</label>
+                    <div class="relative">
+                        <select id="categoria" class="w-full bg-slate-50 border rounded-xl py-4 px-4 text-lg text-slate-700 outline-none">
+                            <option value="Mercado">🛒 Mercado</option>
+                            <option value="Comida afuera">🍔 Comida afuera</option>
+                            <option value="Administration">🏢 Administration</option>
+                            <option value="Internet">🌐 Internet</option>
+                            <option value="Insurance">🛡️ Insurance</option>
+                            <option value="Electricity">⚡ Electricity</option>
+                            <option value="Water">💧 Water</option>
+                            <option value="Gas">🔥 Gas</option>
+                            <option value="School Bus">🚌 School Bus</option>
+                            <option value="Transportation">🚕 Transportation</option>
+                            <option value="Cellphone">📱 Cellphone</option>
+                            <option value="Allan">👦🏻 Allan</option>
+                            <option value="Angel David">👦🏻 Angel David</option>
+                            <option value="Luisa">💅 Luisa</option>
+                            <option value="Angel">👔 Angel</option>
+                            <option value="Loan Payment">🏦 Loan Payment</option>
+                            <option value="Credit Card">💳 Credit Card</option>
+                            <option value="Netflix">🎬 Netflix</option>
+                            <option value="Diezmos y Ofrendas">🙏 Diezmos y Ofrendas</option>
+                            <option value="Play">🎮 Play</option>
+                            <option value="Savings">🐷 Savings</option>
+                            <option value="Regalos">🎁 Regalos</option>
+                            <option value="Home & Repairs">🛠️ Home & Repairs</option>
+                            <option value="Vacaciones">✈️ Vacaciones</option>
+                            <option value="Other Expenses">❓ Other Expenses</option>
+                            <option value="Girardot Expenses">🏡 Girardot Expenses</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-600 font-bold mb-2 text-sm">Detalle</label>
+                    <input type="text" id="detalle" class="w-full bg-slate-50 border rounded-xl py-4 px-4 outline-none" placeholder="Opcional">
+                </div>
+                <button onclick="enviarGasto()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">Guardar Gasto</button>
+            </div>
+        </div>
+
+        <div id="tab-stats" class="hidden space-y-5">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Balance Mes</p>
+                    <h3 id="kpi-pnl" class="text-2xl font-black text-slate-800">...</h3>
+                    <p id="kpi-msg" class="text-xs font-medium mt-1">Cargando...</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Ahorro Anual</p>
+                    <h3 id="kpi-ytd" class="text-xl font-black text-blue-600">...</h3>
+                    <p class="text-xs text-blue-400 font-medium mt-1">Acumulado YTD</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Flujo de Caja</h2>
+                <canvas id="chartBalance" height="220"></canvas>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Gastos por Categoría</h2>
+                <canvas id="chartCategories" height="250"></canvas>
+            </div>
+            
+            <button onclick="cargarDatos()" class="w-full bg-white text-slate-600 font-bold py-3 rounded-xl border border-slate-200">🔄 Actualizar</button>
+        </div>
+    </main>
+
+    <nav class="bg-white border-t flex justify-around pb-safe shadow-lg">
+        <button onclick="cambiarTab('registro')" id="nav-registro" class="flex-1 py-4 flex flex-col items-center text-slate-400 active-tab">
+            <i class="fas fa-plus-circle text-2xl mb-1"></i>
+            <span class="text-[10px] font-bold uppercase">Registrar</span>
+        </button>
+        <button onclick="cambiarTab('stats')" id="nav-stats" class="flex-1 py-4 flex flex-col items-center text-slate-400">
+            <i class="fas fa-chart-pie text-2xl mb-1"></i>
+            <span class="text-[10px] font-bold uppercase">Estadísticas</span>
+        </button>
+    </nav>
+
+    <div id="loading" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex justify-center items-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-2xl flex flex-col items-center">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-10 w-10 mb-4"></div>
+            <p class="font-bold text-slate-600 text-sm">Procesando...</p>
+        </div>
+    </div>
+
+    <script>
+        // TU SCRIPT DE GOOGLE
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby68h7vCFbnF6vgE_jecsfwluvtVmwPEMz5LzIqsUdZPw2nAqhbq-L2_cT4gO5i-KnF/exec";
+        
+        let personaActual = localStorage.getItem('budget_persona') || '';
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        window.onload = () => {
+            if(personaActual) setPersona(personaActual);
+            document.getElementById('indicador-mes').innerText = meses[new Date().getMonth()];
+        };
+
+        function setPersona(nombre) {
+            personaActual = nombre;
+            localStorage.setItem('budget_persona', nombre);
+            document.getElementById('btn-angel').className = `flex-1 py-3 rounded-xl border font-bold transition-all ${nombre === 'Angel' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-600'}`;
+            document.getElementById('btn-luisa').className = `flex-1 py-3 rounded-xl border font-bold transition-all ${nombre === 'Luisa' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'border-slate-200 text-slate-600'}`;
+        }
+
+        function cambiarTab(tab) {
+            document.getElementById('tab-registro').classList.add('hidden');
+            document.getElementById('tab-stats').classList.add('hidden');
+            document.getElementById('nav-registro').classList.remove('active-tab', 'text-green-600');
+            document.getElementById('nav-stats').classList.remove('active-tab', 'text-green-600');
+            
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('nav-' + tab).classList.add('active-tab', 'text-green-600');
+            
+            if(tab === 'stats') cargarDatos();
+        }
+
+        function toggleLoading(show) { document.getElementById('loading').classList.toggle('hidden', !show); }
+
+        function enviarGasto() {
+            const monto = document.getElementById('monto').value;
+            const categoria = document.getElementById('categoria').value;
+            const detalle = document.getElementById('detalle').value;
+            
+            if(!personaActual) return alert("⚠️ Selecciona usuario");
+            if(!monto) return alert("⚠️ Ingresa monto");
+
+            toggleLoading(true);
+            fetch(SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ categoria, monto, detalle, persona: personaActual })
+            }).then(() => {
+                toggleLoading(false);
+                alert("✅ Guardado");
+                document.getElementById('monto').value = '';
+                document.getElementById('detalle').value = '';
+            }).catch(e => { toggleLoading(false); alert("Error: " + e); });
+        }
+
+        let chartBal = null, chartCat = null;
+
+        function cargarDatos() {
+            toggleLoading(true);
+            // TRUCO: Agregamos un número aleatorio al final para obligar a descargar datos nuevos
+            const urlFresca = SCRIPT_URL + "?v=" + Math.floor(Math.random() * 10000);
+            
+            fetch(urlFresca)
+                .then(r => r.json())
+                .then(data => {
+                    toggleLoading(false);
+                    // DEBUG: Esto te confirmará qué llegó
+                    console.log("Datos recibidos:", data);
+                    
+                    if(!data.pnl) {
+                        alert("⚠️ AVISO: Recibiendo datos viejos. Por favor revisa que guardaste la Nueva Versión en Apps Script.");
+                    } else {
+                        // Si todo sale bien, calculamos y mostramos
+                        renderStats(data);
+                    }
+                })
+                .catch(e => { toggleLoading(false); alert("Error de red: " + e); });
+        }
+
+        function renderStats(data) {
+            const mesIdx = new Date().getMonth();
+            const ingreso = data.ingresos[mesIdx] || 0;
+            const gasto = data.gastosTotal[mesIdx] || 0;
+            const pnl = data.pnl[mesIdx]; // Usamos el PNL directo del backend
+            const ytd = data.pnl.reduce((a,b)=>a+b, 0);
+
+            // Actualizar textos
+            const elPnl = document.getElementById('kpi-pnl');
+            const elMsg = document.getElementById('kpi-msg');
+            elPnl.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(pnl);
+            document.getElementById('kpi-ytd').innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(ytd);
+
+            if(pnl >= 0) {
+                elPnl.className = "text-2xl font-black text-emerald-600";
+                elMsg.innerHTML = "✅ Superávit";
+                elMsg.className = "text-xs font-bold text-emerald-600 mt-1";
+            } else {
+                elPnl.className = "text-2xl font-black text-rose-600";
+                elMsg.innerHTML = "⚠️ Déficit";
+                elMsg.className = "text-xs font-bold text-rose-600 mt-1";
+            }
+
+            // Gráficas
+            const ctx1 = document.getElementById('chartBalance').getContext('2d');
+            if(chartBal) chartBal.destroy();
+            chartBal = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: meses.map(m => m.substring(0,3)),
+                    datasets: [
+                        { type: 'line', label: 'Ahorro', data: data.pnl, borderColor: '#2563eb', borderWidth: 2, tension:0.4, order:0 },
+                        { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius:4, order:1 },
+                        { label: 'Gastos', data: data.gastosTotal, backgroundColor: '#f43f5e', borderRadius:4, order:2 }
+                    ]
+                },
+                options: { responsive:true, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}} }
+            });
+
+            const ctx2 = document.getElementById('chartCategories').getContext('2d');
+            if(chartCat) chartCat.destroy();
+            const totals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
+            const validIdx = totals.map((v,i) => v > 0 ? i : -1).filter(i => i !== -1);
+            
+            chartCat = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: validIdx.map(i => data.categorias[i]),
+                    datasets: [{
+                        data: validIdx.map(i => totals[i]),
+                        backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive:true, plugins:{legend:{position:'bottom', labels:{boxWidth:12}}}, cutout:'70%' }
+            });
+        }
+    </script>
+</body>
+</html>
+</html>
