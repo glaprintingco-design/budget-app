@@ -149,14 +149,43 @@
         // Si una categoria supera este %, la barra saldrá ROJA. Si es menor, VERDE.
         // El resto que no este aquí se marcará como alerta si supera el 5%
         const METAS_PCT = {
-            'Mercado': 25,
-            'Comida afuera': 10,
-            'Loan Payment': 20,
-            'Rent': 30,
-            'Savings': 20,
-            'GLA Enterprise': 15,
-            'Milo': 5,
-            'Credit Card': 10
+            // --- BLOQUE 1: VIVIENDA Y SERVICIOS (El peso pesado) ---
+            'Girardot Expenses': 38.0, // Tu gasto más grande
+            'Home & Repairs': 2.0,
+            'Administration': 5.0,
+            'Electricity': 1.5,
+            'Water': 1.0,
+            'Gas': 0.5,
+            'Internet': 1.5,
+            'Cellphone': 1.0,
+            
+            // --- BLOQUE 2: ALIMENTACIÓN Y TRANSPORTE ---
+            'Mercado': 15.0,       // Meta saludable
+            'School Bus': 1.0,
+            'Transportation': 2.0,
+
+            // --- BLOQUE 3: ESTILO DE VIDA (Donde se puede recortar) ---
+            'Comida afuera': 8.0,  // Ojo aquí, suele dispararse
+            'Netflix': 0.5,
+            'Play': 10,
+            'Vacaciones': 5.0,     // Ahorro mensual para viajes
+            'Milo': 0.5,           // La comida del perro
+            'Regalos': 1.0,
+            'Diezmos y Ofrendas': 10.0, // Si es fijo, ponlo aquí
+
+            // --- BLOQUE 4: PERSONALES ---
+            'Allan': 1.0,
+            'Angel David': 1.0,
+            'Luisa': 5.0,
+            'Angel': 5.0,
+
+            // --- BLOQUE 5: FINANCIERO / NEGOCIO ---
+            'GLA Enterprise': 5.0, // Inversión en tu negocio
+            'Savings': 10.0,       // Meta de ahorro
+            'Loan Payment': 5.0,
+            'Credit Card': 10.0,    // Idealmente pagar total
+            'Insurance': 5.0,
+            'Other Expenses': 1.0
         };
 
         let personaActual = localStorage.getItem('budget_persona') || '';
