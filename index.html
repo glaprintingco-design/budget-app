@@ -60,7 +60,7 @@
                             <option value="Angel David">👦🏻 Angel David</option>
                             <option value="Luisa">💅 Luisa</option>
                             <option value="Angel">👔 Angel</option>
-							<option value="Milo">🐶 Milo</option>
+                            <option value="Milo">🐶 Milo</option>
                             <option value="Loan Payment">🏦 Loan Payment</option>
                             <option value="Credit Card">💳 Credit Card</option>
                             <option value="Netflix">🎬 Netflix</option>
@@ -71,7 +71,7 @@
                             <option value="Home & Repairs">🛠️ Home & Repairs</option>
                             <option value="Vacaciones">✈️ Vacaciones</option>
                             <option value="Other Expenses">❓ Other Expenses</option>
-							<option value="GLA Enterprise">💼 GLA Enterprise</option>
+                            <option value="GLA Enterprise">💼 GLA Enterprise</option>
                             <option value="Girardot Expenses">🏡 Girardot Expenses</option>
                         </select>
                     </div>
@@ -104,16 +104,9 @@
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <h2 class="text-lg font-bold text-slate-800 mb-4">Gastos por Categoría</h2>
-                <div class="relative h-64">
-                    <canvas id="chartCategories"></canvas>
-                </div>
-                
-                <div class="mt-6 pt-6 border-t border-slate-100">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Cumplimiento de Metas (%)</h3>
-                    <div id="lista-metas" class="space-y-4">
-                        <p class="text-sm text-slate-400">Cargando desglose...</p>
-                    </div>
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Control de Presupuesto</h2>
+                <div id="lista-metas" class="space-y-4">
+                    <p class="text-sm text-slate-400">Cargando desglose...</p>
                 </div>
             </div>
             
@@ -144,47 +137,43 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby68h7vCFbnF6vgE_jecsfwluvtVmwPEMz5LzIqsUdZPw2nAqhbq-L2_cT4gO5i-KnF/exec";
         
         // ===============================================
-        // AQUI CONFIGURAS TUS METAS DE PORCENTAJE IDEALES
+        // TUS METAS (Ajustadas para acercarse al 55% de gastos fijos)
         // ===============================================
-        // Si una categoria supera este %, la barra saldrá ROJA. Si es menor, VERDE.
-        // El resto que no este aquí se marcará como alerta si supera el 5%
         const METAS_PCT = {
-            // --- BLOQUE 1: VIVIENDA Y SERVICIOS (El peso pesado) ---
-            'Girardot Expenses': 38.0, // Tu gasto más grande
+            // Fijos
+            'Girardot Expenses': 38.0, 
             'Home & Repairs': 2.0,
-            'Administration': 5.0,
+            'Administration': 1.5,
             'Electricity': 1.5,
             'Water': 1.0,
             'Gas': 0.5,
-            'Internet': 1.5,
+            'Internet': 3.5,
             'Cellphone': 1.0,
-            
-            // --- BLOQUE 2: ALIMENTACIÓN Y TRANSPORTE ---
-            'Mercado': 15.0,       // Meta saludable
-            'School Bus': 1.0,
+            'Mercado': 10.0,       
+            'School Bus': 2.0,
             'Transportation': 2.0,
 
-            // --- BLOQUE 3: ESTILO DE VIDA (Donde se puede recortar) ---
-            'Comida afuera': 8.0,  // Ojo aquí, suele dispararse
+            // Variables / Estilo de Vida
+            'Comida afuera': 5.0,  
             'Netflix': 0.5,
-            'Play': 10,
-            'Vacaciones': 5.0,     // Ahorro mensual para viajes
-            'Milo': 0.5,           // La comida del perro
+            'Play': 0.5,
+            'Vacaciones': 5.0,     
+            'Milo': 1.0,           
             'Regalos': 1.0,
-            'Diezmos y Ofrendas': 10.0, // Si es fijo, ponlo aquí
+            'Diezmos y Ofrendas': 10.0, 
 
-            // --- BLOQUE 4: PERSONALES ---
+            // Personales
             'Allan': 1.0,
             'Angel David': 1.0,
-            'Luisa': 5.0,
-            'Angel': 5.0,
+            'Luisa': 2.0,
+            'Angel': 1.0,
 
-            // --- BLOQUE 5: FINANCIERO / NEGOCIO ---
-            'GLA Enterprise': 5.0, // Inversión en tu negocio
-            'Savings': 10.0,       // Meta de ahorro
+            // Financiero
+            'GLA Enterprise': 5.0, 
+            'Savings': 10.0,       
             'Loan Payment': 5.0,
-            'Credit Card': 10.0,    // Idealmente pagar total
-            'Insurance': 5.0,
+            'Credit Card': 0.0,    
+            'Insurance': 1.0,
             'Other Expenses': 1.0
         };
 
@@ -238,7 +227,7 @@
             }).catch(e => { toggleLoading(false); alert("Error: " + e); });
         }
 
-        let chartBal = null, chartCat = null;
+        let chartBal = null; // Ya no necesitamos chartCat
 
         function cargarDatos() {
             toggleLoading(true);
@@ -258,127 +247,108 @@
         }
 
         function renderStats(data) {
-    const mesIdx = new Date().getMonth();
-    const pnl = data.pnl[mesIdx];
-    const ytd = data.pnl.reduce((a,b)=>a+b, 0);
+            const mesIdx = new Date().getMonth();
+            const pnl = data.pnl[mesIdx];
+            const ytd = data.pnl.reduce((a,b)=>a+b, 0);
 
-    // KPI Texts
-    const elPnl = document.getElementById('kpi-pnl');
-    const elMsg = document.getElementById('kpi-msg');
-    elPnl.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(pnl);
-    document.getElementById('kpi-ytd').innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(ytd);
+            // KPI Texts
+            const elPnl = document.getElementById('kpi-pnl');
+            const elMsg = document.getElementById('kpi-msg');
+            elPnl.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(pnl);
+            document.getElementById('kpi-ytd').innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(ytd);
 
-    if(pnl >= 0) {
-        elPnl.className = "text-2xl font-black text-emerald-600";
-        elMsg.innerHTML = "✅ Superávit";
-        elMsg.className = "text-xs font-bold text-emerald-600 mt-1";
-    } else {
-        elPnl.className = "text-2xl font-black text-rose-600";
-        elMsg.innerHTML = "⚠️ Déficit";
-        elMsg.className = "text-xs font-bold text-rose-600 mt-1";
-    }
+            if(pnl >= 0) {
+                elPnl.className = "text-2xl font-black text-emerald-600";
+                elMsg.innerHTML = "✅ Superávit";
+                elMsg.className = "text-xs font-bold text-emerald-600 mt-1";
+            } else {
+                elPnl.className = "text-2xl font-black text-rose-600";
+                elMsg.innerHTML = "⚠️ Déficit";
+                elMsg.className = "text-xs font-bold text-rose-600 mt-1";
+            }
 
-    // --- CHART 1: Flujo ---
-    const ctx1 = document.getElementById('chartBalance').getContext('2d');
-    if(chartBal) chartBal.destroy();
-    chartBal = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-            labels: meses.map(m => m.substring(0,3)),
-            datasets: [
-                { type: 'line', label: 'Ahorro', data: data.pnl, borderColor: '#2563eb', borderWidth: 2, tension:0.4, order:0 },
-                { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius:4, order:1 },
-                { label: 'Gastos', data: data.gastosTotal, backgroundColor: '#f43f5e', borderRadius:4, order:2 }
-            ]
-        },
-        options: { responsive:true, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}} }
-    });
+            // --- CHART 1: Flujo (ESTE SI LO DEJAMOS) ---
+            const ctx1 = document.getElementById('chartBalance').getContext('2d');
+            if(chartBal) chartBal.destroy();
+            chartBal = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: meses.map(m => m.substring(0,3)),
+                    datasets: [
+                        { type: 'line', label: 'Ahorro', data: data.pnl, borderColor: '#2563eb', borderWidth: 2, tension:0.4, order:0 },
+                        { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius:4, order:1 },
+                        { label: 'Gastos', data: data.gastosTotal, backgroundColor: '#f43f5e', borderRadius:4, order:2 }
+                    ]
+                },
+                options: { responsive:true, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}} }
+            });
 
-    // --- CALCULOS PARA CHART 2 Y LISTA DE METAS ---
-    
-    // 1. Calcular totales por categoria
-    const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
-    
-    // --- CAMBIO CLAVE AQUI ---
-    // Calculamos el total de Ingresos para usarlo como base del % (Igual que tu Sheet)
-    const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
-    const baseCalculo = totalIngresos > 0 ? totalIngresos : 1; 
-    
-    // Filtramos solo los que tienen gastos > 0
-    let categoriasConDatos = [];
-    data.categorias.forEach((cat, index) => {
-        if(catTotals[index] > 0) {
-            categoriasConDatos.push({
-                nombre: cat,
-                total: catTotals[index],
-                // Aquí usamos baseCalculo (Ingresos) en vez de gastos totales
-                porcentaje: (catTotals[index] / baseCalculo * 100) 
+            // --- LISTA DE CUMPLIMIENTO DE METAS (Reemplaza a la dona) ---
+            
+            // 1. Calcular totales por categoria
+            const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
+            
+            // 2. Base del calculo: Total Ingresos (Igual que en tu Sheet)
+            const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
+            const baseCalculo = totalIngresos > 0 ? totalIngresos : 1; 
+            
+            // 3. Filtrar categorias con gastos > 0
+            let categoriasConDatos = [];
+            data.categorias.forEach((cat, index) => {
+                if(catTotals[index] > 0) {
+                    categoriasConDatos.push({
+                        nombre: cat,
+                        total: catTotals[index],
+                        // % Gasto sobre el Ingreso Total
+                        porcentaje: (catTotals[index] / baseCalculo * 100) 
+                    });
+                }
+            });
+
+            // Ordenamos de mayor a menor porcentaje
+            categoriasConDatos.sort((a,b) => b.total - a.total);
+
+            // 4. Renderizar la lista
+            const listaDiv = document.getElementById('lista-metas');
+            listaDiv.innerHTML = ''; // Limpiar
+
+            if(categoriasConDatos.length === 0) {
+                listaDiv.innerHTML = '<p class="text-center text-slate-400 text-sm">Aún no hay gastos registrados este año.</p>';
+            }
+
+            categoriasConDatos.forEach(cat => {
+                const nombre = cat.nombre;
+                const realPct = cat.porcentaje.toFixed(1); // Un decimal
+                
+                // Buscamos la meta configurada, si no existe ponemos 5% por defecto
+                const metaPct = METAS_PCT[nombre] || 5; 
+                
+                // Logica de Color: Rojo si gastamos MÁS del % permitido, Verde si estamos bien
+                const isOverBudget = parseFloat(realPct) > metaPct;
+                const colorBarra = isOverBudget ? 'bg-rose-500' : 'bg-emerald-500';
+                const colorTexto = isOverBudget ? 'text-rose-600' : 'text-slate-600';
+                const icono = isOverBudget ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
+
+                const htmlItem = `
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                ${icono}
+                                <span class="text-sm font-bold text-slate-700">${nombre}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold ${colorTexto}">${realPct}%</span>
+                                <span class="text-[10px] text-slate-400"> / Meta ${metaPct}%</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div class="${colorBarra} h-2 rounded-full" style="width: ${Math.min(realPct, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+                listaDiv.innerHTML += htmlItem;
             });
         }
-    });
-
-    // Ordenamos de mayor a menor gasto absoluto
-    categoriasConDatos.sort((a,b) => b.total - a.total);
-
-    // --- CHART 2: Dona (Solo visual) ---
-    const ctx2 = document.getElementById('chartCategories').getContext('2d');
-    if(chartCat) chartCat.destroy();
-    
-    chartCat = new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-            labels: categoriasConDatos.map(c => c.nombre),
-            datasets: [{
-                data: categoriasConDatos.map(c => c.total),
-                backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'],
-                borderWidth: 0
-            }]
-        },
-        options: { 
-            responsive:true, 
-            plugins:{
-                legend:{display: false}, 
-            }, 
-            cutout:'70%' 
-        }
-    });
-
-    // --- LISTA DE METAS Y COLORES ---
-    const listaDiv = document.getElementById('lista-metas');
-    listaDiv.innerHTML = ''; // Limpiar
-
-    categoriasConDatos.forEach(cat => {
-        const nombre = cat.nombre;
-        const realPct = cat.porcentaje.toFixed(1); // Un decimal
-        // Buscamos la meta configurada, si no existe ponemos 5% por defecto
-        const metaPct = METAS_PCT[nombre] || 5; 
-        
-        // Logica de Color: Rojo si gastamos MÁS del % permitido, Verde si estamos bien
-        const isOverBudget = parseFloat(realPct) > metaPct;
-        const colorBarra = isOverBudget ? 'bg-rose-500' : 'bg-emerald-500';
-        const colorTexto = isOverBudget ? 'text-rose-600' : 'text-slate-600';
-        const icono = isOverBudget ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
-
-        const htmlItem = `
-            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-2">
-                        ${icono}
-                        <span class="text-sm font-bold text-slate-700">${nombre}</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-xs font-bold ${colorTexto}">${realPct}%</span>
-                        <span class="text-[10px] text-slate-400"> / Meta ${metaPct}%</span>
-                    </div>
-                </div>
-                <div class="w-full bg-slate-200 rounded-full h-2">
-                    <div class="${colorBarra} h-2 rounded-full" style="width: ${Math.min(realPct, 100)}%"></div>
-                </div>
-            </div>
-        `;
-        listaDiv.innerHTML += htmlItem;
-    });
-}
     </script>
 </body>
 </html>
