@@ -3,17 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Presupuesto</title>
-
-    <link rel="manifest" href="manifest.json">
-    
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
-    
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+    <title>Presupuesto Monge Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -70,6 +60,7 @@
                             <option value="Angel David">👦🏻 Angel David</option>
                             <option value="Luisa">💅 Luisa</option>
                             <option value="Angel">👔 Angel</option>
+							<option value="Milo">🐶 Milo</option>
                             <option value="Loan Payment">🏦 Loan Payment</option>
                             <option value="Credit Card">💳 Credit Card</option>
                             <option value="Netflix">🎬 Netflix</option>
@@ -80,6 +71,7 @@
                             <option value="Home & Repairs">🛠️ Home & Repairs</option>
                             <option value="Vacaciones">✈️ Vacaciones</option>
                             <option value="Other Expenses">❓ Other Expenses</option>
+							<option value="GLA Enterprise">💼 GLA Enterprise</option>
                             <option value="Girardot Expenses">🏡 Girardot Expenses</option>
                         </select>
                     </div>
@@ -113,7 +105,16 @@
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                 <h2 class="text-lg font-bold text-slate-800 mb-4">Gastos por Categoría</h2>
-                <canvas id="chartCategories" height="250"></canvas>
+                <div class="relative h-64">
+                    <canvas id="chartCategories"></canvas>
+                </div>
+                
+                <div class="mt-6 pt-6 border-t border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Cumplimiento de Metas (%)</h3>
+                    <div id="lista-metas" class="space-y-4">
+                        <p class="text-sm text-slate-400">Cargando desglose...</p>
+                    </div>
+                </div>
             </div>
             
             <button onclick="cargarDatos()" class="w-full bg-white text-slate-600 font-bold py-3 rounded-xl border border-slate-200">🔄 Actualizar</button>
@@ -139,9 +140,25 @@
     </div>
 
     <script>
-        // TU SCRIPT DE GOOGLE
+        // CONFIGURACION
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby68h7vCFbnF6vgE_jecsfwluvtVmwPEMz5LzIqsUdZPw2nAqhbq-L2_cT4gO5i-KnF/exec";
         
+        // ===============================================
+        // AQUI CONFIGURAS TUS METAS DE PORCENTAJE IDEALES
+        // ===============================================
+        // Si una categoria supera este %, la barra saldrá ROJA. Si es menor, VERDE.
+        // El resto que no este aquí se marcará como alerta si supera el 5%
+        const METAS_PCT = {
+            'Mercado': 25,
+            'Comida afuera': 10,
+            'Loan Payment': 20,
+            'Rent': 30,
+            'Savings': 20,
+            'GLA Enterprise': 15,
+            'Milo': 5,
+            'Credit Card': 10
+        };
+
         let personaActual = localStorage.getItem('budget_persona') || '';
         const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -196,20 +213,15 @@
 
         function cargarDatos() {
             toggleLoading(true);
-            // TRUCO: Agregamos un número aleatorio al final para obligar a descargar datos nuevos
             const urlFresca = SCRIPT_URL + "?v=" + Math.floor(Math.random() * 10000);
             
             fetch(urlFresca)
                 .then(r => r.json())
                 .then(data => {
                     toggleLoading(false);
-                    // DEBUG: Esto te confirmará qué llegó
-                    console.log("Datos recibidos:", data);
-                    
                     if(!data.pnl) {
-                        alert("⚠️ AVISO: Recibiendo datos viejos. Por favor revisa que guardaste la Nueva Versión en Apps Script.");
+                        alert("⚠️ Error: Datos incompletos del backend.");
                     } else {
-                        // Si todo sale bien, calculamos y mostramos
                         renderStats(data);
                     }
                 })
@@ -218,12 +230,10 @@
 
         function renderStats(data) {
             const mesIdx = new Date().getMonth();
-            const ingreso = data.ingresos[mesIdx] || 0;
-            const gasto = data.gastosTotal[mesIdx] || 0;
-            const pnl = data.pnl[mesIdx]; // Usamos el PNL directo del backend
+            const pnl = data.pnl[mesIdx];
             const ytd = data.pnl.reduce((a,b)=>a+b, 0);
 
-            // Actualizar textos
+            // KPI Texts
             const elPnl = document.getElementById('kpi-pnl');
             const elMsg = document.getElementById('kpi-msg');
             elPnl.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0}).format(pnl);
@@ -239,7 +249,7 @@
                 elMsg.className = "text-xs font-bold text-rose-600 mt-1";
             }
 
-            // Gráficas
+            // --- CHART 1: Flujo ---
             const ctx1 = document.getElementById('chartBalance').getContext('2d');
             if(chartBal) chartBal.destroy();
             chartBal = new Chart(ctx1, {
@@ -255,27 +265,85 @@
                 options: { responsive:true, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}} }
             });
 
+            // --- CALCULOS PARA CHART 2 Y LISTA DE METAS ---
+            // 1. Calcular totales por categoria (anual o mes actual? Usaremos Total Anual para simplificar visualización de pesos)
+            const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
+            const totalGastosGeneral = catTotals.reduce((a,b)=>a+b, 0);
+            
+            // Filtramos solo los que tienen gastos > 0
+            let categoriasConDatos = [];
+            data.categorias.forEach((cat, index) => {
+                if(catTotals[index] > 0) {
+                    categoriasConDatos.push({
+                        nombre: cat,
+                        total: catTotals[index],
+                        porcentaje: totalGastosGeneral > 0 ? (catTotals[index] / totalGastosGeneral * 100) : 0
+                    });
+                }
+            });
+
+            // Ordenamos de mayor a menor gasto
+            categoriasConDatos.sort((a,b) => b.total - a.total);
+
+            // --- CHART 2: Dona (Solo visual) ---
             const ctx2 = document.getElementById('chartCategories').getContext('2d');
             if(chartCat) chartCat.destroy();
-            const totals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
-            const validIdx = totals.map((v,i) => v > 0 ? i : -1).filter(i => i !== -1);
             
             chartCat = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
-                    labels: validIdx.map(i => data.categorias[i]),
+                    labels: categoriasConDatos.map(c => c.nombre),
                     datasets: [{
-                        data: validIdx.map(i => totals[i]),
-                        backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+                        data: categoriasConDatos.map(c => c.total),
+                        backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'],
                         borderWidth: 0
                     }]
                 },
-                options: { responsive:true, plugins:{legend:{position:'bottom', labels:{boxWidth:12}}}, cutout:'70%' }
+                options: { 
+                    responsive:true, 
+                    plugins:{
+                        legend:{display: false}, // Ocultamos leyenda para usar la lista personalizada
+                    }, 
+                    cutout:'70%' 
+                }
+            });
+
+            // --- LISTA DE METAS Y COLORES ---
+            const listaDiv = document.getElementById('lista-metas');
+            listaDiv.innerHTML = ''; // Limpiar
+
+            categoriasConDatos.forEach(cat => {
+                const nombre = cat.nombre;
+                const realPct = cat.porcentaje.toFixed(1);
+                // Buscamos la meta configurada, si no existe ponemos 5% por defecto
+                const metaPct = METAS_PCT[nombre] || 5; 
+                
+                // Logica de Color: Rojo si gastamos MÁS del % permitido, Verde si estamos bien
+                const isOverBudget = parseFloat(realPct) > metaPct;
+                const colorBarra = isOverBudget ? 'bg-rose-500' : 'bg-emerald-500';
+                const colorTexto = isOverBudget ? 'text-rose-600' : 'text-slate-600';
+                const icono = isOverBudget ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
+
+                const htmlItem = `
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                ${icono}
+                                <span class="text-sm font-bold text-slate-700">${nombre}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold ${colorTexto}">${realPct}%</span>
+                                <span class="text-[10px] text-slate-400"> / Meta ${metaPct}%</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div class="${colorBarra} h-2 rounded-full" style="width: ${Math.min(realPct, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+                listaDiv.innerHTML += htmlItem;
             });
         }
     </script>
 </body>
 </html>
-
-
-
