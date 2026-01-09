@@ -166,7 +166,7 @@
             'Savings': 10.0,        
             'Loan Payment': 5.0,
             'Credit Card': 8.0,     
-            'Insurance': 2.0,
+            'Insurance': 7.5,
             'Other Expenses': 1.0
         };
 
@@ -241,21 +241,39 @@
 
         function renderStats(data) {
             const mesIdx = new Date().getMonth();
-            const pnl = data.pnl[mesIdx];
-            const ytd = data.pnl.reduce((a,b)=>a+b, 0);
 
-            // Formateador de dinero (reutilizable)
+            // 1. IDENTIFICAR LA CATEGORÍA DE AHORRO (Debe llamarse igual que en tu lista)
+            const NOMBRE_CATEGORIA_AHORRO = "Savings"; 
+            
+            // Buscamos en qué posición está "Savings" en tus datos
+            const indexSavings = data.categorias.indexOf(NOMBRE_CATEGORIA_AHORRO);
+            
+            // Obtenemos los montos de Savings por mes (si no existe, llenamos con ceros)
+            const montosSavings = indexSavings >= 0 ? data.detalleGastos[indexSavings] : data.pnl.map(() => 0);
+
+            // 2. RECALCULAR EL PNL (Ahorro Real)
+            // Ahorro Real = El PNL que viene del excel + Lo que registraste en la categoría Savings
+            const pnlReal = data.pnl.map((valor, i) => Number(valor) + Number(montosSavings[i]));
+            
+            // 3. RECALCULAR GASTOS REALES (Sin contar el ahorro como gasto)
+            // Gastos Reales = Gastos Totales - Lo que se fue a Savings
+            const gastosReales = data.gastosTotal.map((valor, i) => Number(valor) - Number(montosSavings[i]));
+
+            const pnlMes = pnlReal[mesIdx];
+            const ytd = pnlReal.reduce((a,b)=>a+b, 0);
+
+            // Formateador de dinero
             const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
 
             // KPI Texts
             const elPnl = document.getElementById('kpi-pnl');
             const elMsg = document.getElementById('kpi-msg');
-            elPnl.innerText = moneyFormatter.format(pnl);
+            elPnl.innerText = moneyFormatter.format(pnlMes);
             document.getElementById('kpi-ytd').innerText = moneyFormatter.format(ytd);
 
-            if(pnl >= 0) {
+            if(pnlMes >= 0) {
                 elPnl.className = "text-2xl font-black text-emerald-600";
-                elMsg.innerHTML = "✅ Superávit";
+                elMsg.innerHTML = "✅ Superávit (+ Ahorro)";
                 elMsg.className = "text-xs font-bold text-emerald-600 mt-1";
             } else {
                 elPnl.className = "text-2xl font-black text-rose-600";
@@ -271,16 +289,42 @@
                 data: {
                     labels: meses.map(m => m.substring(0,3)),
                     datasets: [
-                        { type: 'line', label: 'Ahorro', data: data.pnl, borderColor: '#2563eb', borderWidth: 2, tension:0.4, order:0 },
+                        // La línea azul ahora usa pnlReal (Sobrante + Savings Pocket)
+                        { type: 'line', label: 'Ahorro Total', data: pnlReal, borderColor: '#2563eb', borderWidth: 2, tension:0.4, order:0 },
                         { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius:4, order:1 },
-                        { label: 'Gastos', data: data.gastosTotal, backgroundColor: '#f43f5e', borderRadius:4, order:2 }
+                        // La barra roja ahora usa gastosReales (Todo menos Savings)
+                        { label: 'Gastos', data: gastosReales, backgroundColor: '#f43f5e', borderRadius:4, order:2 },
+                        // Opcional: Una barrita extra amarilla apilada para visualizar cuánto se fue a Savings
+                        { label: 'En Bolsillo', data: montosSavings, backgroundColor: '#f59e0b', borderRadius:4, order:3, stack: 'gastos' }
                     ]
                 },
-                options: { responsive:true, plugins:{legend:{position:'bottom'}}, scales:{x:{grid:{display:false}}} }
+                options: { 
+                    responsive:true, 
+                    plugins:{
+                        legend:{position:'bottom'},
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }, 
+                    scales:{
+                        x:{grid:{display:false}},
+                        y: { stacked: false } // Cambia a true si quieres apilar gastos y savings visualmente
+                    } 
+                }
             });
 
-            // --- LISTA DE CUMPLIMIENTO DE METAS ---
-            
+            // --- LISTA DE CUMPLIMIENTO DE METAS (Esto queda igual, porque ahí SÍ quieres ver Savings como una meta a llenar) ---
             const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
             const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
             const baseCalculo = totalIngresos > 0 ? totalIngresos : 1; 
@@ -309,14 +353,20 @@
                 const nombre = cat.nombre;
                 const realPct = cat.porcentaje.toFixed(1);
                 const metaPct = METAS_PCT[nombre] || 5; 
-                
-                // Formateamos el dinero específico de este item
                 const formattedMoney = moneyFormatter.format(cat.total);
 
-                const isOverBudget = parseFloat(realPct) > metaPct;
-                const colorBarra = isOverBudget ? 'bg-rose-500' : 'bg-emerald-500';
-                const colorTexto = isOverBudget ? 'text-rose-600' : 'text-slate-600';
-                const icono = isOverBudget ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
+                // Lógica especial para Savings: Si es Savings, pasarse de la meta es BUENO (Verde), no malo
+                let isGood = false;
+                if(nombre === 'Savings') {
+                    isGood = true; // Siempre verde
+                } else {
+                    isGood = parseFloat(realPct) <= metaPct; // Verde si gasté menos de la meta
+                }
+
+                const colorBarra = isGood ? 'bg-emerald-500' : 'bg-rose-500';
+                const colorTexto = isGood ? 'text-slate-600' : 'text-rose-600';
+                // Si es Savings y me paso, genial. Si es gasto y me paso, alerta.
+                const icono = (nombre !== 'Savings' && !isGood) ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
 
                 const htmlItem = `
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
