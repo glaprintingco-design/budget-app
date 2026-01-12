@@ -448,7 +448,7 @@
         }
 
         // --- 3. LÓGICA EKER (NUEVA FUNCIÓN) ---
-        function renderEker(data) {
+       function renderEker(data) {
             const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
             
             // 1. Calcular Ingresos Totales Reales
@@ -463,7 +463,7 @@
             
             data.categorias.forEach((catName, idx) => {
                 const monto = catTotals[idx];
-                const jarCode = EKER_MAP[catName] || 'NEC'; // Si no está mapeado, va a NEC por defecto
+                const jarCode = EKER_MAP[catName] || 'NEC'; 
                 jarTotals[jarCode] += monto;
             });
 
@@ -478,37 +478,73 @@
                 const total = jarTotals[jarKey];
                 const pct = (total / baseCalc * 100).toFixed(1);
                 
-                // Color semáforo: Verde si estamos debajo de la meta (excepto FFA que queremos que sea alto)
+                // Color semáforo
                 let isGood = false;
                 if(jarKey === 'FFA' || jarKey === 'LTSS' || jarKey === 'GIVE') {
-                    // Para Ahorro e Inversión, más es mejor (pero visualmente queremos ver cuánto llenamos)
                     isGood = true; 
                 } else {
-                    // Para Gastos, menos es mejor
                     isGood = parseFloat(pct) <= info.target;
                 }
 
-                const progressColor = isGood ? info.color : 'bg-rose-500'; // Si nos pasamos en NEC, sale rojo
+                const progressColor = isGood ? info.color : 'bg-rose-500'; 
+                const percentageColor = isGood ? 'text-slate-500' : 'text-rose-500';
+
+                // --- NUEVO: OBTENER MOVIMIENTOS DETALLADOS PARA ESTE JARRÓN ---
+                const movimientosJarron = (typeof movimientosGlobal !== 'undefined') ? movimientosGlobal.filter(m => {
+                    const mappedJar = EKER_MAP[m.categoria] || 'NEC';
+                    return mappedJar === jarKey;
+                }) : [];
+
+                // Generar HTML de los detalles
+                let detallesHTML = '';
+                if(movimientosJarron.length > 0) {
+                    detallesHTML = movimientosJarron.map(mov => `
+                        <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 text-xs">
+                            <div class="text-slate-500 w-12">${mov.fecha.substring(0,5)}</div>
+                            <div class="flex-1 px-2 overflow-hidden">
+                                <div class="text-slate-700 font-medium truncate">${mov.detalle || '-'}</div>
+                                <div class="text-[10px] text-slate-400 italic truncate">${mov.categoria}</div>
+                            </div>
+                            <div class="text-slate-800 font-bold">${moneyFormatter.format(mov.monto)}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    detallesHTML = '<p class="text-xs text-slate-400 italic py-2">Sin gastos registrados en este jarrón.</p>';
+                }
+
+                // Usamos un ID único para el acordeón: 'eker-jar-CODE'
+                const uniqueId = `eker-jar-${jarKey}`;
 
                 const html = `
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">
-                                    ${info.icon}
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div onclick="toggleDetalle('${uniqueId}')" class="p-4 cursor-pointer active:bg-slate-50 transition-colors">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">
+                                        ${info.icon}
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="font-bold text-slate-700">${info.name}</h4>
+                                            <i id="icon-${uniqueId}" class="fas fa-chevron-down text-[10px] text-slate-400 rotate-icon"></i>
+                                        </div>
+                                        <p class="text-xs text-slate-400 font-mono">Meta: ${info.target}%</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 class="font-bold text-slate-700">${info.name}</h4>
-                                    <p class="text-xs text-slate-400 font-mono">Meta: ${info.target}%</p>
+                                <div class="text-right">
+                                    <h3 class="font-black text-slate-800">${moneyFormatter.format(total)}</h3>
+                                    <p class="text-xs font-bold ${percentageColor}">${pct}% Real</p>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <h3 class="font-black text-slate-800">${moneyFormatter.format(total)}</h3>
-                                <p class="text-xs font-bold ${isGood ? 'text-slate-500' : 'text-rose-500'}">${pct}% Real</p>
+                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                <div class="${progressColor} h-full rounded-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
                             </div>
                         </div>
-                        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                            <div class="${progressColor} h-full rounded-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
+
+                        <div id="detalle-${uniqueId}" class="details-content bg-slate-50 px-4">
+                            <div class="py-3">
+                                ${detallesHTML}
+                            </div>
                         </div>
                     </div>
                 `;
