@@ -238,18 +238,29 @@
             }
         }
 
-        function renderStats(data) {
+       function renderStats(data) {
             const mesIdx = new Date().getMonth();
+            const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
+
+            // 1. LOGICA DE AHORRO "SMART"
+            // Buscamos si existe la categoría "Savings" y extraemos sus montos
             const NOMBRE_CATEGORIA_AHORRO = "Savings"; 
             const indexSavings = data.categorias.indexOf(NOMBRE_CATEGORIA_AHORRO);
             const montosSavings = indexSavings >= 0 ? data.detalleGastos[indexSavings] : data.pnl.map(() => 0);
+
+            // Recalcular PNL (Sumando el ahorro al PnL) y Gastos (Restando el ahorro de los gastos)
             const pnlReal = data.pnl.map((valor, i) => Number(valor) + Number(montosSavings[i]));
             const gastosReales = data.gastosTotal.map((valor, i) => Number(valor) - Number(montosSavings[i]));
 
             const pnlMes = pnlReal[mesIdx];
             const ytd = pnlReal.reduce((a,b)=>a+b, 0);
-            const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
 
+            // 2. INDICADOR DE CAJA REAL (El "Termómetro de Liquidez")
+            // Calculamos cuánto dinero queda en el banco después de haber movido la plata al bolsillo
+            const ahorroDelMes = Number(montosSavings[mesIdx]) || 0;
+            const cajaReal = pnlMes - ahorroDelMes;
+
+            // 3. ACTUALIZAR KPIS (Tarjetas de arriba)
             const elPnl = document.getElementById('kpi-pnl');
             const elMsg = document.getElementById('kpi-msg');
             elPnl.innerText = moneyFormatter.format(pnlMes);
@@ -257,14 +268,21 @@
 
             if(pnlMes >= 0) {
                 elPnl.className = "text-2xl font-black text-emerald-600";
-                elMsg.innerHTML = "✅ Superávit (+ Ahorro)";
+                // AQUÍ MOSTRAMOS LA CAJA REAL
+                elMsg.innerHTML = `
+                    <span class="block">✅ Ganancia Neta</span>
+                    <span class="block text-slate-400 font-normal mt-1 border-t pt-1">
+                        Caja tras ahorro: <b class="${cajaReal >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${moneyFormatter.format(cajaReal)}</b>
+                    </span>
+                `;
                 elMsg.className = "text-xs font-bold text-emerald-600 mt-1";
             } else {
                 elPnl.className = "text-2xl font-black text-rose-600";
-                elMsg.innerHTML = "⚠️ Déficit";
+                elMsg.innerHTML = "⚠️ Déficit Contable";
                 elMsg.className = "text-xs font-bold text-rose-600 mt-1";
             }
 
+            // 4. GRAFICA (Chart.js)
             const ctx1 = document.getElementById('chartBalance').getContext('2d');
             if(chartBal) chartBal.destroy();
             chartBal = new Chart(ctx1, {
@@ -288,7 +306,7 @@
                 }
             });
 
-            // --- LISTA DE METAS CON ACORDEÓN ---
+            // 5. LISTA DE CATEGORIAS (CON ACORDEÓN)
             const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
             const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
             const baseCalculo = totalIngresos > 0 ? totalIngresos : 1; 
@@ -327,11 +345,9 @@
                 const colorTexto = isGood ? 'text-slate-600' : 'text-rose-600';
                 const icono = (nombre !== 'Savings' && !isGood) ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
 
-                // FILTRAR MOVIMIENTOS DETALLADOS PARA ESTA CATEGORÍA
-                // Buscamos en movimientosGlobal los que coincidan con el nombre
-                const misMovimientos = movimientosGlobal.filter(m => m.categoria === nombre);
+                // Filtrar movimientos para el acordeón (usando variable global movimientosGlobal)
+                const misMovimientos = (typeof movimientosGlobal !== 'undefined') ? movimientosGlobal.filter(m => m.categoria === nombre) : [];
                 
-                // Generar HTML de los detalles
                 let detallesHTML = '';
                 if(misMovimientos.length > 0) {
                     detallesHTML = misMovimientos.map(mov => `
@@ -342,7 +358,7 @@
                         </div>
                     `).join('');
                 } else {
-                    detallesHTML = '<p class="text-xs text-slate-400 italic py-2">Sin detalles disponibles (Actualiza el Script)</p>';
+                    detallesHTML = '<p class="text-xs text-slate-400 italic py-2">Sin detalles disponibles.</p>';
                 }
 
                 const htmlItem = `
@@ -368,7 +384,6 @@
                                 <div class="${colorBarra} h-2 rounded-full" style="width: ${Math.min(realPct, 100)}%"></div>
                             </div>
                         </div>
-                        
                         <div id="detalle-${idx}" class="details-content bg-slate-100 px-3">
                              <div class="py-2">
                                 ${detallesHTML}
