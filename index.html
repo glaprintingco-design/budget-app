@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Presupuesto Monge Final</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Monge Budget</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -13,7 +15,6 @@
         .active-tab { color: #059669; border-top: 2px solid #059669; background-color: #ecfdf5; }
         .loader { border-top-color: #3b82f6; animation: spinner 1s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Animación suave para el acordeón */
         .details-content { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; max-height: 0; opacity: 0; overflow: hidden; }
         .details-open { max-height: 500px; opacity: 1; }
         .rotate-icon { transition: transform 0.3s; }
@@ -117,6 +118,28 @@
             
             <button onclick="cargarDatos()" class="w-full bg-white text-slate-600 font-bold py-3 rounded-xl border border-slate-200">🔄 Actualizar</button>
         </div>
+
+        <div id="tab-eker" class="hidden space-y-5">
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-6 rounded-2xl shadow-lg text-white">
+                <h2 class="text-2xl font-bold mb-1">Filosofía Eker</h2>
+                <p class="text-slate-300 text-sm">Distribución de los 6 Jarrones</p>
+                <div class="mt-4 flex justify-between items-end">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase">Ingreso Total</p>
+                        <p id="eker-income" class="text-xl font-bold">...</p>
+                    </div>
+                    <div class="text-right">
+                         <p class="text-xs text-slate-400 uppercase">Meta NEC</p>
+                         <p class="text-xl font-bold text-emerald-400">50%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="lista-eker" class="space-y-4 pb-10">
+                <p class="text-center text-slate-400 text-sm mt-10">Carga los datos primero...</p>
+            </div>
+        </div>
+
     </main>
 
     <nav class="bg-white border-t flex justify-around pb-safe shadow-lg">
@@ -126,7 +149,11 @@
         </button>
         <button onclick="cambiarTab('stats')" id="nav-stats" class="flex-1 py-4 flex flex-col items-center text-slate-400">
             <i class="fas fa-chart-pie text-2xl mb-1"></i>
-            <span class="text-[10px] font-bold uppercase">Estadísticas</span>
+            <span class="text-[10px] font-bold uppercase">Stats</span>
+        </button>
+        <button onclick="cambiarTab('eker')" id="nav-eker" class="flex-1 py-4 flex flex-col items-center text-slate-400">
+            <i class="fas fa-balance-scale text-2xl mb-1"></i>
+            <span class="text-[10px] font-bold uppercase">Eker</span>
         </button>
     </nav>
 
@@ -140,6 +167,7 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby68h7vCFbnF6vgE_jecsfwluvtVmwPEMz5LzIqsUdZPw2nAqhbq-L2_cT4gO5i-KnF/exec";
         
+        // --- 1. CONFIGURACIÓN DE METAS INDIVIDUALES ---
         const METAS_PCT = {
             'Girardot Expenses': 10.0, 'Home & Repairs': 2.0, 'Administration': 1.5,
             'Electricity': 1.5, 'Water': 1.0, 'Gas': 0.5, 'Internet': 1.5, 'Cellphone': 1.0,
@@ -150,8 +178,47 @@
             'Credit Card': 8.0, 'Insurance': 7.5, 'Other Expenses': 1.0
         };
 
+        // --- 2. MAPEO DE EKER (CATEGORÍA -> JARRÓN) ---
+        // Aquí es donde defines la "Personalidad" de cada gasto
+        const EKER_MAP = {
+            // NEC (55%) - Necesidades
+            'Mercado': 'NEC', 'Administration': 'NEC', 'Electricity': 'NEC', 'Water': 'NEC', 
+            'Gas': 'NEC', 'Internet': 'NEC', 'Cellphone': 'NEC', 'School Bus': 'NEC', 
+            'Transportation': 'NEC', 'Insurance': 'NEC', 'Home & Repairs': 'NEC', 
+            'Loan Payment': 'NEC', 'Credit Card': 'NEC', 'Other Expenses': 'NEC',
+
+            // FFA (10%) - Inversión / Libertad Financiera
+            'Savings': 'FFA', 
+            'GLA Enterprise': 'FFA',       // Inversión en tu negocio
+            'Girardot Expenses': 'FFA',    // Inversión inmobiliaria
+
+            // LTSS (10%) - Ahorro Largo Plazo Gastable
+            'Vacaciones': 'LTSS',
+
+            // PLAY (10%) - Juego / Ocio
+            'Comida afuera': 'PLAY', 'Netflix': 'PLAY', 'Play': 'PLAY', 'Milo': 'PLAY', 
+            'Angel': 'PLAY', 'Luisa': 'PLAY', 'Allan': 'PLAY', 'Angel David': 'PLAY',
+
+            // EDU (10%) - Educación
+            // (Si tienes cursos, agrégalos aquí)
+
+            // GIVE (5%) - Dar
+            'Diezmos y Ofrendas': 'GIVE', 'Regalos': 'GIVE'
+        };
+
+        // Configuración visual de los Jarrones
+        const JARS_INFO = {
+            'NEC': { name: 'Necesidades', target: 50, color: 'bg-blue-500', icon: '🏠' },
+            'FFA': { name: 'Libertad (Inversión)', target: 10, color: 'bg-yellow-500', icon: '🚀' },
+            'LTSS': { name: 'Ahorro Largo Plazo', target: 10, color: 'bg-purple-500', icon: '⏳' },
+            'EDU': { name: 'Educación', target: 10, color: 'bg-pink-500', icon: '📚' },
+            'PLAY': { name: 'Juego y Ocio', target: 10, color: 'bg-orange-500', icon: '🎉' },
+            'GIVE': { name: 'Dar / Ofrenda', target: 10, color: 'bg-green-500', icon: '🙏' }
+        };
+
         let personaActual = localStorage.getItem('budget_persona') || '';
         const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        let movimientosGlobal = []; // Para el acordeón
 
         window.onload = () => {
             if(personaActual) setPersona(personaActual);
@@ -166,15 +233,15 @@
         }
 
         function cambiarTab(tab) {
-            document.getElementById('tab-registro').classList.add('hidden');
-            document.getElementById('tab-stats').classList.add('hidden');
-            document.getElementById('nav-registro').classList.remove('active-tab', 'text-green-600');
-            document.getElementById('nav-stats').classList.remove('active-tab', 'text-green-600');
+            ['registro', 'stats', 'eker'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('nav-' + t).classList.remove('active-tab', 'text-green-600');
+            });
             
             document.getElementById('tab-' + tab).classList.remove('hidden');
             document.getElementById('nav-' + tab).classList.add('active-tab', 'text-green-600');
             
-            if(tab === 'stats') cargarDatos();
+            if(tab === 'stats' || tab === 'eker') cargarDatos();
         }
 
         function toggleLoading(show) { document.getElementById('loading').classList.toggle('hidden', !show); }
@@ -201,9 +268,6 @@
         }
 
         let chartBal = null; 
-        
-        // Variable global para guardar los movimientos crudos
-        let movimientosGlobal = []; 
 
         function cargarDatos() {
             toggleLoading(true);
@@ -216,15 +280,14 @@
                     if(!data.pnl) {
                         alert("⚠️ Error: Datos incompletos del backend.");
                     } else {
-                        // Guardamos los movimientos si existen, si no, array vacío
                         movimientosGlobal = data.movimientos || [];
                         renderStats(data);
+                        renderEker(data); // Renderizar también el tab Eker
                     }
                 })
                 .catch(e => { toggleLoading(false); alert("Error de red: " + e); });
         }
 
-        // Función para abrir/cerrar acordeón
         function toggleDetalle(id) {
             const content = document.getElementById('detalle-' + id);
             const icon = document.getElementById('icon-' + id);
@@ -238,29 +301,22 @@
             }
         }
 
-       function renderStats(data) {
+        function renderStats(data) {
             const mesIdx = new Date().getMonth();
             const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
 
-            // 1. LOGICA DE AHORRO "SMART"
-            // Buscamos si existe la categoría "Savings" y extraemos sus montos
             const NOMBRE_CATEGORIA_AHORRO = "Savings"; 
             const indexSavings = data.categorias.indexOf(NOMBRE_CATEGORIA_AHORRO);
             const montosSavings = indexSavings >= 0 ? data.detalleGastos[indexSavings] : data.pnl.map(() => 0);
-
-            // Recalcular PNL (Sumando el ahorro al PnL) y Gastos (Restando el ahorro de los gastos)
             const pnlReal = data.pnl.map((valor, i) => Number(valor) + Number(montosSavings[i]));
             const gastosReales = data.gastosTotal.map((valor, i) => Number(valor) - Number(montosSavings[i]));
 
             const pnlMes = pnlReal[mesIdx];
             const ytd = pnlReal.reduce((a,b)=>a+b, 0);
 
-            // 2. INDICADOR DE CAJA REAL (El "Termómetro de Liquidez")
-            // Calculamos cuánto dinero queda en el banco después de haber movido la plata al bolsillo
             const ahorroDelMes = Number(montosSavings[mesIdx]) || 0;
             const cajaReal = pnlMes - ahorroDelMes;
 
-            // 3. ACTUALIZAR KPIS (Tarjetas de arriba)
             const elPnl = document.getElementById('kpi-pnl');
             const elMsg = document.getElementById('kpi-msg');
             elPnl.innerText = moneyFormatter.format(pnlMes);
@@ -268,7 +324,6 @@
 
             if(pnlMes >= 0) {
                 elPnl.className = "text-2xl font-black text-emerald-600";
-                // AQUÍ MOSTRAMOS LA CAJA REAL
                 elMsg.innerHTML = `
                     <span class="block">✅ Ganancia Neta</span>
                     <span class="block text-slate-400 font-normal mt-1 border-t pt-1">
@@ -282,7 +337,6 @@
                 elMsg.className = "text-xs font-bold text-rose-600 mt-1";
             }
 
-            // 4. GRAFICA (Chart.js)
             const ctx1 = document.getElementById('chartBalance').getContext('2d');
             if(chartBal) chartBal.destroy();
             chartBal = new Chart(ctx1, {
@@ -306,7 +360,6 @@
                 }
             });
 
-            // 5. LISTA DE CATEGORIAS (CON ACORDEÓN)
             const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
             const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
             const baseCalculo = totalIngresos > 0 ? totalIngresos : 1; 
@@ -345,7 +398,6 @@
                 const colorTexto = isGood ? 'text-slate-600' : 'text-rose-600';
                 const icono = (nombre !== 'Savings' && !isGood) ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
 
-                // Filtrar movimientos para el acordeón (usando variable global movimientosGlobal)
                 const misMovimientos = (typeof movimientosGlobal !== 'undefined') ? movimientosGlobal.filter(m => m.categoria === nombre) : [];
                 
                 let detallesHTML = '';
@@ -392,6 +444,75 @@
                     </div>
                 `;
                 listaDiv.innerHTML += htmlItem;
+            });
+        }
+
+        // --- 3. LÓGICA EKER (NUEVA FUNCIÓN) ---
+        function renderEker(data) {
+            const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
+            
+            // 1. Calcular Ingresos Totales Reales
+            const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
+            document.getElementById('eker-income').innerText = moneyFormatter.format(totalIngresos);
+
+            // 2. Agrupar gastos por Jarrón
+            let jarTotals = { 'NEC':0, 'FFA':0, 'LTSS':0, 'EDU':0, 'PLAY':0, 'GIVE':0 };
+            
+            // Sumamos los totales de cada categoría al jarrón correspondiente
+            const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
+            
+            data.categorias.forEach((catName, idx) => {
+                const monto = catTotals[idx];
+                const jarCode = EKER_MAP[catName] || 'NEC'; // Si no está mapeado, va a NEC por defecto
+                jarTotals[jarCode] += monto;
+            });
+
+            // 3. Renderizar Tarjetas
+            const container = document.getElementById('lista-eker');
+            container.innerHTML = '';
+            
+            const baseCalc = totalIngresos > 0 ? totalIngresos : 1;
+
+            Object.keys(JARS_INFO).forEach(jarKey => {
+                const info = JARS_INFO[jarKey];
+                const total = jarTotals[jarKey];
+                const pct = (total / baseCalc * 100).toFixed(1);
+                
+                // Color semáforo: Verde si estamos debajo de la meta (excepto FFA que queremos que sea alto)
+                let isGood = false;
+                if(jarKey === 'FFA' || jarKey === 'LTSS' || jarKey === 'GIVE') {
+                    // Para Ahorro e Inversión, más es mejor (pero visualmente queremos ver cuánto llenamos)
+                    isGood = true; 
+                } else {
+                    // Para Gastos, menos es mejor
+                    isGood = parseFloat(pct) <= info.target;
+                }
+
+                const progressColor = isGood ? info.color : 'bg-rose-500'; // Si nos pasamos en NEC, sale rojo
+
+                const html = `
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">
+                                    ${info.icon}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-700">${info.name}</h4>
+                                    <p class="text-xs text-slate-400 font-mono">Meta: ${info.target}%</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <h3 class="font-black text-slate-800">${moneyFormatter.format(total)}</h3>
+                                <p class="text-xs font-bold ${isGood ? 'text-slate-500' : 'text-rose-500'}">${pct}% Real</p>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div class="${progressColor} h-full rounded-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
             });
         }
     </script>
