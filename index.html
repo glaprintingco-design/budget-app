@@ -6,9 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Monge Budget</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -19,7 +20,7 @@
         .loader { border-top-color: #3b82f6; animation: spinner 1s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .details-content { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; max-height: 0; opacity: 0; overflow: hidden; }
-        .details-open { max-height: 500px; opacity: 1; }
+        .details-open { max-height: 1200px; opacity: 1; }
         .rotate-icon { transition: transform 0.3s; }
         .rotate-down { transform: rotate(180deg); }
     </style>
@@ -32,7 +33,8 @@
     </header>
 
     <main class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24">
-        
+
+        <!-- ===================== TAB REGISTRO ===================== -->
         <div id="tab-registro" class="space-y-5">
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                 <label class="block text-slate-400 text-xs font-bold uppercase mb-3">Usuario</label>
@@ -42,57 +44,35 @@
                 </div>
             </div>
 
+            <!-- Toggle Gasto / Ingreso -->
+            <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex gap-2">
+                <button onclick="setTipo('gasto')" id="btn-gasto" class="flex-1 py-3 rounded-xl font-bold">🔻 Gasto</button>
+                <button onclick="setTipo('ingreso')" id="btn-ingreso" class="flex-1 py-3 rounded-xl font-bold">🟢 Ingreso</button>
+            </div>
+
             <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 space-y-5">
                 <div>
-                    <label class="block text-slate-600 font-bold mb-2 text-sm">Monto</label>
+                    <label class="block text-slate-600 font-bold mb-2 text-sm">Monto (COP)</label>
                     <div class="relative">
                         <span class="absolute left-4 top-4 text-slate-400 text-xl">$</span>
-                        <input type="number" id="monto" class="w-full bg-slate-50 border rounded-xl py-4 pl-9 pr-4 text-3xl font-bold focus:ring-2 focus:ring-green-500 outline-none" placeholder="0">
+                        <input type="number" id="monto" inputmode="numeric" class="w-full bg-slate-50 border rounded-xl py-4 pl-9 pr-4 text-3xl font-bold focus:ring-2 focus:ring-green-500 outline-none" placeholder="0">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-slate-600 font-bold mb-2 text-sm">Categoría</label>
+                    <label class="block text-slate-600 font-bold mb-2 text-sm" id="label-categoria">Categoría</label>
                     <div class="relative">
-                        <select id="categoria" class="w-full bg-slate-50 border rounded-xl py-4 px-4 text-lg text-slate-700 outline-none">
-                            <option value="Mercado">🛒 Mercado</option>
-                            <option value="Comida afuera">🍔 Comida afuera</option>
-                            <option value="Administration">🏢 Administration</option>
-                            <option value="Internet">🌐 Internet</option>
-                            <option value="Insurance">🛡️ Insurance</option>
-                            <option value="Electricity">⚡ Electricity</option>
-                            <option value="Water">💧 Water</option>
-                            <option value="Gas">🔥 Gas</option>
-                            <option value="School Bus">🚌 School Bus</option>
-                            <option value="Transportation">🚕 Transportation</option>
-                            <option value="Cellphone">📱 Cellphone</option>
-                            <option value="Allan">👦🏻 Allan</option>
-                            <option value="Angel David">👦🏻 Angel David</option>
-                            <option value="Luisa">💅 Luisa</option>
-                            <option value="Angel">👔 Angel</option>
-                            <option value="Milo">🐶 Milo</option>
-                            <option value="Loan Payment">🏦 Loan Payment</option>
-                            <option value="Credit Card">💳 Credit Card</option>
-                            <option value="Netflix">🎬 Netflix</option>
-                            <option value="Diezmos y Ofrendas">🙏 Diezmos y Ofrendas</option>
-                            <option value="Play">🎮 Play</option>
-                            <option value="Savings">🐷 Savings</option>
-                            <option value="Regalos">🎁 Regalos</option>
-                            <option value="Home & Repairs">🛠️ Home & Repairs</option>
-                            <option value="Vacaciones">✈️ Vacaciones</option>
-                            <option value="Other Expenses">❓ Other Expenses</option>
-                            <option value="GLA Enterprise">💼 GLA Enterprise</option>
-                            <option value="Girardot Expenses">🏡 Girardot Expenses</option>
-                        </select>
+                        <select id="categoria" class="w-full bg-slate-50 border rounded-xl py-4 px-4 text-lg text-slate-700 outline-none"></select>
                     </div>
                 </div>
                 <div>
                     <label class="block text-slate-600 font-bold mb-2 text-sm">Detalle</label>
                     <input type="text" id="detalle" class="w-full bg-slate-50 border rounded-xl py-4 px-4 outline-none" placeholder="Opcional">
                 </div>
-                <button onclick="enviarGasto()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">Guardar Gasto</button>
+                <button onclick="enviarMovimiento()" id="btn-guardar" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform">Guardar</button>
             </div>
         </div>
 
+        <!-- ===================== TAB STATS ===================== -->
         <div id="tab-stats" class="hidden space-y-5">
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
@@ -118,10 +98,11 @@
                     <p class="text-sm text-slate-400">Cargando desglose...</p>
                 </div>
             </div>
-            
+
             <button onclick="cargarDatos()" class="w-full bg-white text-slate-600 font-bold py-3 rounded-xl border border-slate-200">🔄 Actualizar</button>
         </div>
 
+        <!-- ===================== TAB EKER ===================== -->
         <div id="tab-eker" class="hidden space-y-5">
             <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-6 rounded-2xl shadow-lg text-white">
                 <h2 class="text-2xl font-bold mb-1">Filosofía Eker</h2>
@@ -143,6 +124,37 @@
             </div>
         </div>
 
+        <!-- ===================== TAB METAS (Deudas + Viaje) ===================== -->
+        <div id="tab-metas" class="hidden space-y-5">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 rounded-2xl shadow-lg text-white">
+                <h2 class="text-2xl font-bold mb-1">🎯 Metas</h2>
+                <p class="text-emerald-100 text-sm">Salir de deudas y cumplir el viaje</p>
+            </div>
+
+            <!-- Viaje España -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-slate-700">✈️ Viaje a España (Allan)</h3>
+                    <button onclick="editarViaje()" class="text-xs text-emerald-600 font-bold">✏️ Editar</button>
+                </div>
+                <div id="viaje-box"></div>
+            </div>
+
+            <!-- Deudas -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="font-bold text-slate-700">💳 Deudas</h3>
+                    <span id="deuda-total" class="text-sm font-black text-rose-600"></span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-4">Toca una deuda para actualizar su saldo</p>
+                <div id="lista-deudas" class="space-y-4"></div>
+            </div>
+
+            <p class="text-[11px] text-slate-400 text-center px-4">
+                Estos datos se guardan en este dispositivo. Actualiza los saldos cuando hagas un pago.
+            </p>
+        </div>
+
     </main>
 
     <nav class="bg-white border-t flex justify-around pb-safe shadow-lg">
@@ -158,6 +170,10 @@
             <i class="fas fa-balance-scale text-2xl mb-1"></i>
             <span class="text-[10px] font-bold uppercase">Eker</span>
         </button>
+        <button onclick="cambiarTab('metas')" id="nav-metas" class="flex-1 py-4 flex flex-col items-center text-slate-400">
+            <i class="fas fa-bullseye text-2xl mb-1"></i>
+            <span class="text-[10px] font-bold uppercase">Metas</span>
+        </button>
     </nav>
 
     <div id="loading" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex justify-center items-center backdrop-blur-sm">
@@ -169,47 +185,60 @@
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby68h7vCFbnF6vgE_jecsfwluvtVmwPEMz5LzIqsUdZPw2nAqhbq-L2_cT4gO5i-KnF/exec";
-        
-        // --- 1. CONFIGURACIÓN DE METAS INDIVIDUALES ---
+
+        // Pon en true SOLO después de desplegar el backend nuevo (AppsScript.gs).
+        // Con true, la app lee la respuesta del servidor y confirma de verdad el guardado.
+        const BACKEND_CORS = false;
+        // Pon en true cuando el backend ya sepa guardar ingresos y editar/borrar.
+        // Mientras esté en false, la app NO deja registrar ingresos (para no dañar tus datos).
+        const BACKEND_SOPORTA_INGRESOS = false;
+
+        // --- MONEDA: Pesos colombianos (antes estaba en USD por error) ---
+        const MONEDA = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+        const fmt = (n) => MONEDA.format(Number(n) || 0);
+
+        // --- 1. METAS POR CATEGORÍA (% del ingreso) — alineadas con el plan de saneamiento ---
         const METAS_PCT = {
-            'Girardot Expenses': 15.0, 'Home & Repairs': 2.0, 'Administration': 1.5,
-            'Electricity': 1.5, 'Water': 1.0, 'Gas': 0.5, 'Internet': 1.5, 'Cellphone': 1.0,
-            'Mercado': 15.0, 'School Bus': 1.0, 'Transportation': 3.0, 'Comida afuera': 8.0,  
+            'Girardot Expenses': 15.0, 'Home & Repairs': 2.0, 'Administration': 5.0,
+            'Electricity': 2.0, 'Water': 2.0, 'Gas': 0.5, 'Internet': 1.5, 'Cellphone': 1.0,
+            'Mercado': 13.0, 'School Bus': 1.0, 'Transportation': 3.0, 'Comida afuera': 4.0,
             'Netflix': 0.5, 'Play': 0.5, 'Vacaciones': 5.0, 'Milo': 1.0, 'Regalos': 1.0,
-            'Diezmos y Ofrendas': 10.0, 'Allan': 1.0, 'Angel David': 1.0, 'Luisa': 5.0,
-            'Angel': 5.0, 'GLA Enterprise': 5.0, 'Savings': 10.0, 'Loan Payment': 5.0,
-            'Credit Card': 8.0, 'Insurance': 7.5, 'Other Expenses': 1.0
+            'Diezmos y Ofrendas': 10.0, 'Allan': 3.0, 'Angel David': 3.0, 'Luisa': 3.0,
+            'Angel': 3.0, 'GLA Enterprise': 5.0, 'Savings': 10.0, 'Loan Payment': 12.0,
+            'Credit Card': 10.0, 'Insurance': 7.5, 'Other Expenses': 1.0,
+            'Ajuste': 1.0
         };
 
-        // --- 2. MAPEO DE EKER (CATEGORÍA -> JARRÓN) ---
-        // Aquí es donde defines la "Personalidad" de cada gasto
+        // --- 2. MAPEO EKER (categoría -> jarrón) ---
         const EKER_MAP = {
-            // NEC (55%) - Necesidades
-            'Mercado': 'NEC', 'Administration': 'NEC', 'Electricity': 'NEC', 'Water': 'NEC', 
-            'Gas': 'NEC', 'Internet': 'NEC', 'Cellphone': 'NEC', 'School Bus': 'NEC', 
-            'Transportation': 'NEC', 'Insurance': 'NEC', 'Home & Repairs': 'NEC', 
+            // NEC - Necesidades
+            'Mercado': 'NEC', 'Administration': 'NEC', 'Electricity': 'NEC', 'Water': 'NEC',
+            'Gas': 'NEC', 'Internet': 'NEC', 'Cellphone': 'NEC', 'School Bus': 'NEC',
+            'Transportation': 'NEC', 'Insurance': 'NEC', 'Home & Repairs': 'NEC',
             'Loan Payment': 'NEC', 'Credit Card': 'NEC', 'Other Expenses': 'NEC',
 
-            // FFA (10%) - Inversión / Libertad Financiera
-            'Savings': 'FFA', 
-            'GLA Enterprise': 'FFA',       // Inversión en tu negocio
-            'Girardot Expenses': 'FFA',    // Inversión inmobiliaria
+            // FFA - Inversión / Libertad Financiera
+            'Savings': 'FFA',
+            'GLA Enterprise': 'FFA',
+            'Girardot Expenses': 'FFA',
 
-            // LTSS (10%) - Ahorro Largo Plazo Gastable
+            // LTSS - Ahorro Largo Plazo Gastable
             'Vacaciones': 'LTSS',
 
-            // PLAY (10%) - Juego / Ocio
-            'Comida afuera': 'PLAY', 'Netflix': 'PLAY', 'Play': 'PLAY', 'Milo': 'PLAY', 
-            'Angel': 'PLAY', 'Luisa': 'PLAY', 'Allan': 'PLAY', 'Angel David': 'PLAY',
+            // EDU - Educación (colegio, formación, desarrollo deportivo de los hijos)
+            'Allan': 'EDU', 'Angel David': 'EDU',
 
-            // EDU (10%) - Educación
-            // (Si tienes cursos, agrégalos aquí)
+            // PLAY - Ocio / personal
+            'Comida afuera': 'PLAY', 'Netflix': 'PLAY', 'Play': 'PLAY', 'Milo': 'PLAY',
+            'Angel': 'PLAY', 'Luisa': 'PLAY',
 
-            // GIVE (5%) - Dar
-            'Diezmos y Ofrendas': 'GIVE', 'Regalos': 'GIVE'
+            // GIVE - Dar
+            'Diezmos y Ofrendas': 'GIVE', 'Regalos': 'GIVE',
+
+            // Reconciliación (no es un jarrón real; cuadra la app con el banco)
+            'Ajuste': 'NEC'
         };
 
-        // Configuración visual de los Jarrones
         const JARS_INFO = {
             'NEC': { name: 'Necesidades', target: 50, color: 'bg-blue-500', icon: '🏠' },
             'FFA': { name: 'Libertad (Inversión)', target: 10, color: 'bg-yellow-500', icon: '🚀' },
@@ -219,13 +248,45 @@
             'GIVE': { name: 'Dar / Ofrenda', target: 10, color: 'bg-green-500', icon: '🙏' }
         };
 
+        // Categorías de ingreso (para el toggle Ingreso)
+        const CATEGORIAS_GASTO = Object.keys(METAS_PCT);
+        const CATEGORIAS_INGRESO = ['Salario', 'Arriendo Girardot', 'GLA Enterprise', 'Reembolso', 'Otro Ingreso'];
+
+        // --- CONFIG LOCAL (deudas + viaje), editable y persistida en el dispositivo ---
+        const TRM = 3570;       // COP por USD (referencia tarjeta dólares)
+        const EUR_COP = 3880;   // COP por EUR (referencia viaje)
+        const CONFIG_DEFAULT = {
+            viaje: { metaEur: 1800, abonadoEur: 0 },
+            deudas: [
+                { id: 'tc_pesos', nombre: 'Tarjeta Mastercard (pesos)', inicial: 4286549, actual: 4286549 },
+                { id: 'tc_dolares', nombre: 'Tarjeta Mastercard (dólares)', inicial: 955 * TRM, actual: 955 * TRM },
+                { id: 'prestamo', nombre: 'Préstamo personal (Oviedo)', inicial: 30000000, actual: 27691772 },
+                { id: 'hipoteca', nombre: 'Hipoteca Girardot', inicial: 100000000, actual: 94049350 }
+            ]
+        };
+
+        function getConfig() {
+            try {
+                const c = JSON.parse(localStorage.getItem('budget_config'));
+                if (c && c.deudas && c.viaje) return c;
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(CONFIG_DEFAULT));
+        }
+        function saveConfig(c) { localStorage.setItem('budget_config', JSON.stringify(c)); }
+
         let personaActual = localStorage.getItem('budget_persona') || '';
+        let tipoActual = 'gasto';
         const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        let movimientosGlobal = []; // Para el acordeón
+        let movimientosGlobal = [];
 
         window.onload = () => {
-            if(personaActual) setPersona(personaActual);
+            if (personaActual) setPersona(personaActual);
+            setTipo('gasto');
             document.getElementById('indicador-mes').innerText = meses[new Date().getMonth()];
+            // Registrar service worker (offline / instalable)
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
         };
 
         function setPersona(nombre) {
@@ -235,57 +296,95 @@
             document.getElementById('btn-luisa').className = `flex-1 py-3 rounded-xl border font-bold transition-all ${nombre === 'Luisa' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'border-slate-200 text-slate-600'}`;
         }
 
+        function setTipo(tipo) {
+            tipoActual = tipo;
+            const esGasto = tipo === 'gasto';
+            document.getElementById('btn-gasto').className = `flex-1 py-3 rounded-xl font-bold transition-all ${esGasto ? 'bg-rose-50 border border-rose-400 text-rose-600' : 'text-slate-400'}`;
+            document.getElementById('btn-ingreso').className = `flex-1 py-3 rounded-xl font-bold transition-all ${!esGasto ? 'bg-emerald-50 border border-emerald-500 text-emerald-600' : 'text-slate-400'}`;
+            document.getElementById('label-categoria').innerText = esGasto ? 'Categoría' : 'Fuente de ingreso';
+            document.getElementById('btn-guardar').className = `w-full text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform ${esGasto ? 'bg-green-600' : 'bg-emerald-500'}`;
+            // Rellenar el select según el tipo
+            const sel = document.getElementById('categoria');
+            const lista = esGasto ? CATEGORIAS_GASTO : CATEGORIAS_INGRESO;
+            sel.innerHTML = lista.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
         function cambiarTab(tab) {
-            ['registro', 'stats', 'eker'].forEach(t => {
+            ['registro', 'stats', 'eker', 'metas'].forEach(t => {
                 document.getElementById('tab-' + t).classList.add('hidden');
                 document.getElementById('nav-' + t).classList.remove('active-tab', 'text-green-600');
             });
-            
             document.getElementById('tab-' + tab).classList.remove('hidden');
             document.getElementById('nav-' + tab).classList.add('active-tab', 'text-green-600');
-            
-            if(tab === 'stats' || tab === 'eker') cargarDatos();
+
+            if (tab === 'stats' || tab === 'eker') cargarDatos();
+            if (tab === 'metas') renderMetas();
         }
 
         function toggleLoading(show) { document.getElementById('loading').classList.toggle('hidden', !show); }
 
-        function enviarGasto() {
+        function enviarMovimiento() {
             const monto = document.getElementById('monto').value;
             const categoria = document.getElementById('categoria').value;
             const detalle = document.getElementById('detalle').value;
-            
-            if(!personaActual) return alert("⚠️ Selecciona usuario");
-            if(!monto) return alert("⚠️ Ingresa monto");
 
-            toggleLoading(true);
-            fetch(SCRIPT_URL, {
-                method: 'POST', mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ categoria, monto, detalle, persona: personaActual })
-            }).then(() => {
-                toggleLoading(false);
-                alert("✅ Guardado");
+            if (!personaActual) return alert("⚠️ Selecciona usuario");
+            if (!monto || Number(monto) <= 0) return alert("⚠️ Ingresa un monto válido");
+            if (tipoActual === 'ingreso' && !BACKEND_SOPORTA_INGRESOS) {
+                return alert("ℹ️ Para registrar ingresos primero hay que actualizar el backend (ver AppsScript.gs). Por ahora, anota los ingresos directamente en la hoja.");
+            }
+
+            const payload = { tipo: tipoActual, categoria, monto, detalle, persona: personaActual };
+            postBackend(payload, "✅ Guardado", () => {
                 document.getElementById('monto').value = '';
                 document.getElementById('detalle').value = '';
-            }).catch(e => { toggleLoading(false); alert("Error: " + e); });
+            });
         }
 
-        let chartBal = null; 
+        // POST unificado con manejo de errores honesto.
+        function postBackend(payload, okMsg, onOk) {
+            toggleLoading(true);
+            if (BACKEND_CORS) {
+                // Lee la respuesta real del servidor (requiere backend nuevo).
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.json())
+                .then(res => {
+                    toggleLoading(false);
+                    if (res && res.ok) { alert(okMsg); if (onOk) onOk(); }
+                    else { alert("⚠️ El servidor no pudo guardar: " + (res && res.error ? res.error : "desconocido")); }
+                })
+                .catch(e => { toggleLoading(false); alert("❌ No se pudo conectar. Revisa tu internet.\n" + e); });
+            } else {
+                // Modo compatible (no-cors): no podemos leer la respuesta.
+                fetch(SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(() => { toggleLoading(false); alert(okMsg); if (onOk) onOk(); })
+                .catch(e => { toggleLoading(false); alert("❌ No se pudo enviar. Revisa tu internet.\n" + e); });
+            }
+        }
+
+        let chartBal = null;
 
         function cargarDatos() {
             toggleLoading(true);
-            const urlFresca = SCRIPT_URL + "?v=" + Math.floor(Math.random() * 10000);
-            
+            const urlFresca = SCRIPT_URL + "?v=" + Math.floor(Math.random() * 100000);
             fetch(urlFresca)
                 .then(r => r.json())
                 .then(data => {
                     toggleLoading(false);
-                    if(!data.pnl) {
+                    if (!data.pnl) {
                         alert("⚠️ Error: Datos incompletos del backend.");
                     } else {
                         movimientosGlobal = data.movimientos || [];
                         renderStats(data);
-                        renderEker(data); // Renderizar también el tab Eker
+                        renderEker(data);
                     }
                 })
                 .catch(e => { toggleLoading(false); alert("Error de red: " + e); });
@@ -294,45 +393,64 @@
         function toggleDetalle(id) {
             const content = document.getElementById('detalle-' + id);
             const icon = document.getElementById('icon-' + id);
-            
             if (content.classList.contains('details-open')) {
                 content.classList.remove('details-open');
-                icon.classList.remove('rotate-down');
+                if (icon) icon.classList.remove('rotate-down');
             } else {
                 content.classList.add('details-open');
-                icon.classList.add('rotate-down');
+                if (icon) icon.classList.add('rotate-down');
             }
+        }
+
+        // Botones de editar/borrar (solo aparecen si el backend manda un id por movimiento)
+        function botonesMov(mov) {
+            if (mov.id === undefined || mov.id === null || mov.id === '') return '';
+            return `
+                <div class="flex gap-3 mt-1">
+                    <button onclick="event.stopPropagation(); editarMov('${mov.id}', ${Number(mov.monto)})" class="text-[11px] text-blue-500 font-bold">✏️ Editar</button>
+                    <button onclick="event.stopPropagation(); borrarMov('${mov.id}')" class="text-[11px] text-rose-500 font-bold">🗑️ Borrar</button>
+                </div>`;
+        }
+
+        function editarMov(id, montoActual) {
+            const nuevo = prompt("Nuevo monto (COP):", montoActual);
+            if (nuevo === null) return;
+            const n = Number(nuevo);
+            if (isNaN(n) || n <= 0) return alert("Monto inválido");
+            postBackend({ accion: 'editar', id, monto: n }, "✅ Actualizado", () => cargarDatos());
+        }
+        function borrarMov(id) {
+            if (!confirm("¿Borrar este movimiento?")) return;
+            postBackend({ accion: 'borrar', id }, "✅ Borrado", () => cargarDatos());
         }
 
         function renderStats(data) {
             const mesIdx = new Date().getMonth();
-            const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
 
-            const NOMBRE_CATEGORIA_AHORRO = "Savings"; 
+            const NOMBRE_CATEGORIA_AHORRO = "Savings";
             const indexSavings = data.categorias.indexOf(NOMBRE_CATEGORIA_AHORRO);
             const montosSavings = indexSavings >= 0 ? data.detalleGastos[indexSavings] : data.pnl.map(() => 0);
             const pnlReal = data.pnl.map((valor, i) => Number(valor) + Number(montosSavings[i]));
             const gastosReales = data.gastosTotal.map((valor, i) => Number(valor) - Number(montosSavings[i]));
 
             const pnlMes = pnlReal[mesIdx];
-            const ytd = pnlReal.reduce((a,b)=>a+b, 0);
+            const ytd = pnlReal.reduce((a, b) => a + b, 0);
 
             const ahorroDelMes = Number(montosSavings[mesIdx]) || 0;
             const cajaReal = pnlMes - ahorroDelMes;
 
             const elPnl = document.getElementById('kpi-pnl');
             const elMsg = document.getElementById('kpi-msg');
-            elPnl.innerText = moneyFormatter.format(pnlMes);
-            document.getElementById('kpi-ytd').innerText = moneyFormatter.format(ytd);
+            elPnl.innerText = fmt(pnlMes);
+            document.getElementById('kpi-ytd').innerText = fmt(ytd);
 
-            if(pnlMes >= 0) {
+            if (pnlMes >= 0) {
                 elPnl.className = "text-2xl font-black text-emerald-600";
                 elMsg.innerHTML = `
                     <span class="block">✅ Ganancia Neta</span>
                     <span class="block text-slate-400 font-normal mt-1 border-t pt-1">
-                        Caja tras ahorro: <b class="${cajaReal >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${moneyFormatter.format(cajaReal)}</b>
-                    </span>
-                `;
+                        Caja tras ahorro: <b class="${cajaReal >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${fmt(cajaReal)}</b>
+                    </span>`;
                 elMsg.className = "text-xs font-bold text-emerald-600 mt-1";
             } else {
                 elPnl.className = "text-2xl font-black text-rose-600";
@@ -341,82 +459,74 @@
             }
 
             const ctx1 = document.getElementById('chartBalance').getContext('2d');
-            if(chartBal) chartBal.destroy();
+            if (chartBal) chartBal.destroy();
             chartBal = new Chart(ctx1, {
                 type: 'bar',
                 data: {
-                    labels: meses.map(m => m.substring(0,3)),
+                    labels: meses.map(m => m.substring(0, 3)),
                     datasets: [
-                        { type: 'line', label: 'Ahorro Total', data: pnlReal, borderColor: '#2563eb', borderWidth: 2, tension:0.4, order:0 },
-                        { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius:4, order:1 },
-                        { label: 'Gastos', data: gastosReales, backgroundColor: '#f43f5e', borderRadius:4, order:2 },
-                        { label: 'En Bolsillo', data: montosSavings, backgroundColor: '#f59e0b', borderRadius:4, order:3, stack: 'gastos' }
+                        { type: 'line', label: 'Ahorro Total', data: pnlReal, borderColor: '#2563eb', borderWidth: 2, tension: 0.4, order: 0 },
+                        { label: 'Ingresos', data: data.ingresos, backgroundColor: '#10b981', borderRadius: 4, order: 1 },
+                        { label: 'Gastos', data: gastosReales, backgroundColor: '#f43f5e', borderRadius: 4, order: 2 },
+                        { label: 'En Bolsillo', data: montosSavings, backgroundColor: '#f59e0b', borderRadius: 4, order: 3, stack: 'gastos' }
                     ]
                 },
-                options: { 
-                    responsive:true, 
-                    plugins:{
-                        legend:{position:'bottom'},
-                        tooltip: { callbacks: { label: function(c) { return (c.dataset.label||'') + ': ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(c.parsed.y); } } }
-                    }, 
-                    scales:{ x:{grid:{display:false}}, y: { stacked: false } } 
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { callbacks: { label: (c) => (c.dataset.label || '') + ': ' + fmt(c.parsed.y) } }
+                    },
+                    scales: { x: { grid: { display: false } }, y: { stacked: false } }
                 }
             });
 
-            const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
-            const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
-            const baseCalculo = totalIngresos > 0 ? totalIngresos : 1; 
-            
+            const catTotals = data.detalleGastos.map(row => row.reduce((a, b) => Number(a) + Number(b), 0));
+            const totalIngresos = data.ingresos.reduce((a, b) => a + b, 0);
+            const baseCalculo = totalIngresos > 0 ? totalIngresos : 1;
+
             let categoriasConDatos = [];
             data.categorias.forEach((cat, index) => {
-                if(catTotals[index] > 0) {
-                    categoriasConDatos.push({
-                        nombre: cat,
-                        total: catTotals[index],
-                        porcentaje: (catTotals[index] / baseCalculo * 100) 
-                    });
+                if (catTotals[index] > 0) {
+                    categoriasConDatos.push({ nombre: cat, total: catTotals[index], porcentaje: (catTotals[index] / baseCalculo * 100) });
                 }
             });
-
-            categoriasConDatos.sort((a,b) => b.total - a.total);
+            categoriasConDatos.sort((a, b) => b.total - a.total);
 
             const listaDiv = document.getElementById('lista-metas');
-            listaDiv.innerHTML = ''; 
-
-            if(categoriasConDatos.length === 0) {
+            listaDiv.innerHTML = '';
+            if (categoriasConDatos.length === 0) {
                 listaDiv.innerHTML = '<p class="text-center text-slate-400 text-sm">Aún no hay gastos registrados este año.</p>';
             }
 
             categoriasConDatos.forEach((cat, idx) => {
                 const nombre = cat.nombre;
                 const realPct = cat.porcentaje.toFixed(1);
-                const metaPct = METAS_PCT[nombre] || 5; 
-                const formattedMoney = moneyFormatter.format(cat.total);
+                const metaPct = METAS_PCT[nombre] || 5;
+                const formattedMoney = fmt(cat.total);
 
-                let isGood = false;
-                if(nombre === 'Savings') { isGood = true; } 
-                else { isGood = parseFloat(realPct) <= metaPct; }
-
+                let isGood = (nombre === 'Savings') ? true : (parseFloat(realPct) <= metaPct);
                 const colorBarra = isGood ? 'bg-emerald-500' : 'bg-rose-500';
                 const colorTexto = isGood ? 'text-slate-600' : 'text-rose-600';
                 const icono = (nombre !== 'Savings' && !isGood) ? '<i class="fas fa-exclamation-circle text-rose-500"></i>' : '<i class="fas fa-check-circle text-emerald-500"></i>';
 
-                const misMovimientos = (typeof movimientosGlobal !== 'undefined') ? movimientosGlobal.filter(m => m.categoria === nombre) : [];
-                
+                const misMovimientos = movimientosGlobal.filter(m => m.categoria === nombre);
                 let detallesHTML = '';
-                if(misMovimientos.length > 0) {
+                if (misMovimientos.length > 0) {
                     detallesHTML = misMovimientos.map(mov => `
-                        <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 text-xs">
-                            <div class="text-slate-500 w-16">${mov.fecha.substring(0,5)}</div>
-                            <div class="flex-1 text-slate-700 font-medium truncate pr-2">${mov.detalle || '-'}</div>
-                            <div class="text-slate-800 font-bold">${moneyFormatter.format(mov.monto)}</div>
-                        </div>
-                    `).join('');
+                        <div class="py-2 border-b border-slate-100 last:border-0 text-xs">
+                            <div class="flex justify-between items-center">
+                                <div class="text-slate-500 w-16">${(mov.fecha || '').substring(0, 5)}</div>
+                                <div class="flex-1 text-slate-700 font-medium truncate pr-2">${mov.detalle || '-'}</div>
+                                <div class="text-slate-800 font-bold">${fmt(mov.monto)}</div>
+                            </div>
+                            ${botonesMov(mov)}
+                        </div>`).join('');
                 } else {
                     detallesHTML = '<p class="text-xs text-slate-400 italic py-2">Sin detalles disponibles.</p>';
                 }
 
-                const htmlItem = `
+                listaDiv.innerHTML += `
                     <div class="bg-slate-50 rounded-xl border border-slate-100 overflow-hidden">
                         <div onclick="toggleDetalle('${idx}')" class="p-3 cursor-pointer active:bg-slate-100 transition-colors">
                             <div class="flex justify-between items-center mb-2">
@@ -440,92 +550,59 @@
                             </div>
                         </div>
                         <div id="detalle-${idx}" class="details-content bg-slate-100 px-3">
-                             <div class="py-2">
-                                ${detallesHTML}
-                             </div>
+                             <div class="py-2">${detallesHTML}</div>
                         </div>
-                    </div>
-                `;
-                listaDiv.innerHTML += htmlItem;
+                    </div>`;
             });
         }
 
-        // --- 3. LÓGICA EKER (NUEVA FUNCIÓN) ---
-       function renderEker(data) {
-            const moneyFormatter = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', maximumFractionDigits:0});
-            
-            // 1. Calcular Ingresos Totales Reales
-            const totalIngresos = data.ingresos.reduce((a,b)=>a+b, 0); 
-            document.getElementById('eker-income').innerText = moneyFormatter.format(totalIngresos);
+        function renderEker(data) {
+            const totalIngresos = data.ingresos.reduce((a, b) => a + b, 0);
+            document.getElementById('eker-income').innerText = fmt(totalIngresos);
 
-            // 2. Agrupar gastos por Jarrón
-            let jarTotals = { 'NEC':0, 'FFA':0, 'LTSS':0, 'EDU':0, 'PLAY':0, 'GIVE':0 };
-            
-            // Sumamos los totales de cada categoría al jarrón correspondiente
-            const catTotals = data.detalleGastos.map(row => row.reduce((a,b)=> Number(a)+Number(b),0));
-            
+            let jarTotals = { 'NEC': 0, 'FFA': 0, 'LTSS': 0, 'EDU': 0, 'PLAY': 0, 'GIVE': 0 };
+            const catTotals = data.detalleGastos.map(row => row.reduce((a, b) => Number(a) + Number(b), 0));
             data.categorias.forEach((catName, idx) => {
-                const monto = catTotals[idx];
-                const jarCode = EKER_MAP[catName] || 'NEC'; 
-                jarTotals[jarCode] += monto;
+                const jarCode = EKER_MAP[catName] || 'NEC';
+                jarTotals[jarCode] += catTotals[idx];
             });
 
-            // 3. Renderizar Tarjetas
             const container = document.getElementById('lista-eker');
             container.innerHTML = '';
-            
             const baseCalc = totalIngresos > 0 ? totalIngresos : 1;
 
             Object.keys(JARS_INFO).forEach(jarKey => {
                 const info = JARS_INFO[jarKey];
                 const total = jarTotals[jarKey];
                 const pct = (total / baseCalc * 100).toFixed(1);
-                
-                // Color semáforo
-                let isGood = false;
-                if(jarKey === 'FFA' || jarKey === 'LTSS' || jarKey === 'GIVE') {
-                    isGood = true; 
-                } else {
-                    isGood = parseFloat(pct) <= info.target;
-                }
 
-                const progressColor = isGood ? info.color : 'bg-rose-500'; 
+                let isGood = (jarKey === 'FFA' || jarKey === 'LTSS' || jarKey === 'GIVE') ? true : (parseFloat(pct) <= info.target);
+                const progressColor = isGood ? info.color : 'bg-rose-500';
                 const percentageColor = isGood ? 'text-slate-500' : 'text-rose-500';
 
-                // --- NUEVO: OBTENER MOVIMIENTOS DETALLADOS PARA ESTE JARRÓN ---
-                const movimientosJarron = (typeof movimientosGlobal !== 'undefined') ? movimientosGlobal.filter(m => {
-                    const mappedJar = EKER_MAP[m.categoria] || 'NEC';
-                    return mappedJar === jarKey;
-                }) : [];
-
-                // Generar HTML de los detalles
+                const movimientosJarron = movimientosGlobal.filter(m => (EKER_MAP[m.categoria] || 'NEC') === jarKey);
                 let detallesHTML = '';
-                if(movimientosJarron.length > 0) {
+                if (movimientosJarron.length > 0) {
                     detallesHTML = movimientosJarron.map(mov => `
                         <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 text-xs">
-                            <div class="text-slate-500 w-12">${mov.fecha.substring(0,5)}</div>
+                            <div class="text-slate-500 w-12">${(mov.fecha || '').substring(0, 5)}</div>
                             <div class="flex-1 px-2 overflow-hidden">
                                 <div class="text-slate-700 font-medium truncate">${mov.detalle || '-'}</div>
                                 <div class="text-[10px] text-slate-400 italic truncate">${mov.categoria}</div>
                             </div>
-                            <div class="text-slate-800 font-bold">${moneyFormatter.format(mov.monto)}</div>
-                        </div>
-                    `).join('');
+                            <div class="text-slate-800 font-bold">${fmt(mov.monto)}</div>
+                        </div>`).join('');
                 } else {
-                    detallesHTML = '<p class="text-xs text-slate-400 italic py-2">Sin gastos registrados en este jarrón.</p>';
+                    detallesHTML = '<p class="text-xs text-slate-400 italic py-2">Sin gastos en este jarrón.</p>';
                 }
 
-                // Usamos un ID único para el acordeón: 'eker-jar-CODE'
                 const uniqueId = `eker-jar-${jarKey}`;
-
-                const html = `
+                container.innerHTML += `
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div onclick="toggleDetalle('${uniqueId}')" class="p-4 cursor-pointer active:bg-slate-50 transition-colors">
                             <div class="flex justify-between items-start mb-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">
-                                        ${info.icon}
-                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">${info.icon}</div>
                                     <div>
                                         <div class="flex items-center gap-2">
                                             <h4 class="font-bold text-slate-700">${info.name}</h4>
@@ -535,7 +612,7 @@
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <h3 class="font-black text-slate-800">${moneyFormatter.format(total)}</h3>
+                                    <h3 class="font-black text-slate-800">${fmt(total)}</h3>
                                     <p class="text-xs font-bold ${percentageColor}">${pct}% Real</p>
                                 </div>
                             </div>
@@ -543,18 +620,76 @@
                                 <div class="${progressColor} h-full rounded-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
                             </div>
                         </div>
-
                         <div id="detalle-${uniqueId}" class="details-content bg-slate-50 px-4">
-                            <div class="py-3">
-                                ${detallesHTML}
-                            </div>
+                            <div class="py-3">${detallesHTML}</div>
                         </div>
-                    </div>
-                `;
-                container.innerHTML += html;
+                    </div>`;
             });
+        }
+
+        // --- TAB METAS: Deudas + Viaje ---
+        function renderMetas() {
+            const cfg = getConfig();
+
+            // Viaje
+            const v = cfg.viaje;
+            const pagadoPct = v.metaEur > 0 ? Math.min(100, (v.abonadoEur / v.metaEur * 100)) : 0;
+            const faltaEur = Math.max(0, v.metaEur - v.abonadoEur);
+            document.getElementById('viaje-box').innerHTML = `
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-slate-500">Abonado: <b class="text-slate-700">€${v.abonadoEur}</b></span>
+                    <span class="text-slate-500">Meta: <b class="text-slate-700">€${v.metaEur}</b></span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden mb-2">
+                    <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width:${pagadoPct}%"></div>
+                </div>
+                <p class="text-xs text-slate-500">Faltan <b class="text-rose-600">€${faltaEur}</b> (~${fmt(faltaEur * EUR_COP)}) antes del 12 de septiembre.</p>`;
+
+            // Deudas
+            let totalActual = 0;
+            const lista = document.getElementById('lista-deudas');
+            lista.innerHTML = '';
+            cfg.deudas.forEach((d, i) => {
+                totalActual += Number(d.actual) || 0;
+                const pagado = Math.max(0, d.inicial - d.actual);
+                const pct = d.inicial > 0 ? Math.min(100, pagado / d.inicial * 100) : 0;
+                lista.innerHTML += `
+                    <div onclick="editarDeuda(${i})" class="cursor-pointer active:opacity-70">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-bold text-slate-700">${d.nombre}</span>
+                            <span class="font-bold text-slate-800">${fmt(d.actual)}</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div class="bg-emerald-500 h-full rounded-full" style="width:${pct}%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">${pct.toFixed(0)}% pagado · pagado ${fmt(pagado)} de ${fmt(d.inicial)}</p>
+                    </div>`;
+            });
+            document.getElementById('deuda-total').innerText = fmt(totalActual);
+        }
+
+        function editarDeuda(i) {
+            const cfg = getConfig();
+            const d = cfg.deudas[i];
+            const nuevo = prompt(`Saldo actual de "${d.nombre}" (COP):`, Math.round(d.actual));
+            if (nuevo === null) return;
+            const n = Number(nuevo);
+            if (isNaN(n) || n < 0) return alert("Saldo inválido");
+            d.actual = n;
+            saveConfig(cfg);
+            renderMetas();
+        }
+
+        function editarViaje() {
+            const cfg = getConfig();
+            const ab = prompt("¿Cuántos euros llevas abonados al viaje?", cfg.viaje.abonadoEur);
+            if (ab === null) return;
+            const n = Number(ab);
+            if (isNaN(n) || n < 0) return alert("Valor inválido");
+            cfg.viaje.abonadoEur = n;
+            saveConfig(cfg);
+            renderMetas();
         }
     </script>
 </body>
 </html>
-
